@@ -1,7 +1,7 @@
-import Dashboard from "./pages/Dashboard";
+import AIPanel from "./components/AIPanel";
 
 function App() {
-  return <Dashboard />;
+  return <AIPanel />;
 }
 
 export default App;
