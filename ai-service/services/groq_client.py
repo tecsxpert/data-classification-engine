@@ -38,7 +38,7 @@ def call_groq_with_retry(prompt, max_retries=3):
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a data security expert. Always respond with valid JSON only."
+                        "content": "You are a data governance expert. Always respond with valid JSON only."
                     },
                     {
                         "role": "user",
@@ -46,7 +46,7 @@ def call_groq_with_retry(prompt, max_retries=3):
                     }
                 ],
                 temperature=0.3,
-                max_tokens=1000
+                max_tokens=1500
             )
 
             result = response.choices[0].message.content
@@ -114,11 +114,35 @@ def recommend_actions(dataset_name, classification,
         return get_fallback_recommendations(dataset_name)
 
 
+def generate_report(dataset_name, classification,
+                    sensitivity_level, description, fields):
+    """
+    Generates full report using AI
+    Used by /generate-report endpoint
+    """
+    try:
+        template = load_prompt_template('report_prompt')
+        prompt = template.format(
+            dataset_name=dataset_name,
+            classification=classification,
+            sensitivity_level=sensitivity_level,
+            description=description,
+            fields=', '.join(fields),
+            generated_at=datetime.utcnow().isoformat()
+        )
+        response_text = call_groq_with_retry(prompt)
+        if response_text is None:
+            return get_fallback_report(dataset_name)
+        result = json.loads(response_text)
+        result['is_fallback'] = False
+        return result
+    except Exception as e:
+        logger.error(f"generate_report error: {str(e)}")
+        return get_fallback_report(dataset_name)
+
+
 def get_fallback_response(dataset_name):
-    """
-    Returns safe fallback when AI unavailable
-    """
-    logger.warning(f"Returning fallback for: {dataset_name}")
+    """Returns safe fallback when AI unavailable"""
     return {
         "classification": "Confidential",
         "sensitivity_level": "HIGH",
@@ -133,16 +157,12 @@ def get_fallback_response(dataset_name):
 
 
 def get_fallback_recommendations(dataset_name):
-    """
-    Returns safe fallback recommendations
-    when AI is unavailable
-    """
-    logger.warning(f"Returning fallback recommendations for: {dataset_name}")
+    """Returns safe fallback recommendations"""
     return {
         "recommendations": [
             {
                 "action_type": "ENCRYPT",
-                "description": "Encrypt all sensitive data fields at rest and in transit.",
+                "description": "Encrypt all sensitive data fields.",
                 "priority": "HIGH"
             },
             {
@@ -153,6 +173,52 @@ def get_fallback_recommendations(dataset_name):
             {
                 "action_type": "AUDIT",
                 "description": "Enable audit logging for all data access.",
+                "priority": "MEDIUM"
+            }
+        ],
+        "generated_at": datetime.utcnow().isoformat(),
+        "is_fallback": True
+    }
+
+
+def get_fallback_report(dataset_name):
+    """Returns safe fallback report"""
+    return {
+        "title": f"Data Classification Report — {dataset_name}",
+        "summary": f"Manual review required for {dataset_name}.",
+        "overview": "AI service temporarily unavailable. Please review manually.",
+        "key_items": [
+            {
+                "category": "Data Type",
+                "value": "Unknown — manual review required"
+            },
+            {
+                "category": "Compliance",
+                "value": "Manual review required"
+            },
+            {
+                "category": "Risk Level",
+                "value": "Unknown — manual review required"
+            },
+            {
+                "category": "Data Sensitivity",
+                "value": "Unknown — manual review required"
+            }
+        ],
+        "recommendations": [
+            {
+                "action_type": "ENCRYPT",
+                "description": "Encrypt all sensitive data fields.",
+                "priority": "HIGH"
+            },
+            {
+                "action_type": "ACCESS_CONTROL",
+                "description": "Restrict access to authorized personnel.",
+                "priority": "HIGH"
+            },
+            {
+                "action_type": "AUDIT",
+                "description": "Enable audit logging.",
                 "priority": "MEDIUM"
             }
         ],
