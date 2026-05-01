@@ -1,71 +1,42 @@
 # routes/describe.py
-# This file handles POST /describe endpoint
-# Java backend calls this when it needs AI description
+# Handles POST /describe endpoint
+# Now with Redis caching!
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from services.groq_client import classify_data
+from services.cache_service import (
+    generate_cache_key,
+    get_cached_response,
+    set_cached_response
+)
+import time
 
-# Blueprint is like a mini Flask app
-# It groups related endpoints together
 describe_bp = Blueprint('describe', __name__)
 
 
 @describe_bp.route('/describe', methods=['POST'])
 def describe():
-    """
-    POST /describe
-    
-    Receives dataset info and returns AI classification.
-    
-    Request body:
-    {
-        "dataset_name": "Customer_DB",
-        "description": "Customer personal data",
-        "fields": ["name", "email", "phone"]
-    }
-    
-    Response:
-    {
-        "classification": "PII",
-        "sensitivity_level": "HIGH",
-        "description": "...",
-        "generated_at": "2026-04-23T...",
-        "is_fallback": false
-    }
-    """
-
-    # ─────────────────────────────────────────
-    # STEP 1 — GET REQUEST DATA
-    # ─────────────────────────────────────────
     data = request.get_json()
 
-    # Check if request body exists
     if not data:
         return jsonify({
             "error": "Request body is required",
             "status": 400
         }), 400
 
-    # ─────────────────────────────────────────
-    # STEP 2 — VALIDATE INPUT
-    # ─────────────────────────────────────────
-
-    # Check dataset_name exists
     if not data.get('dataset_name'):
         return jsonify({
             "error": "dataset_name is required",
             "status": 400
         }), 400
 
-    # Check description exists
     if not data.get('description'):
         return jsonify({
             "error": "description is required",
             "status": 400
         }), 400
 
-    # Check fields exists and is a list
     if not data.get('fields'):
         return jsonify({
             "error": "fields is required",
@@ -78,31 +49,23 @@ def describe():
             "status": 400
         }), 400
 
-    # Check fields is not empty
     if len(data.get('fields')) == 0:
         return jsonify({
             "error": "fields cannot be empty",
             "status": 400
         }), 400
 
-    # ─────────────────────────────────────────
-    # STEP 3 — SANITIZE INPUT
-    # ─────────────────────────────────────────
-
+    # Sanitize
     dataset_name = str(data['dataset_name']).strip()
     description = str(data['description']).strip()
     fields = [str(f).strip() for f in data['fields']]
 
-    # Check for prompt injection attempts
+    # Check prompt injection
     dangerous_phrases = [
-        'ignore previous',
-        'ignore above',
-        'disregard',
-        'forget instructions',
-        'new instructions',
-        'system prompt'
+        'ignore previous', 'ignore above',
+        'disregard', 'forget instructions',
+        'new instructions', 'system prompt'
     ]
-
     combined_input = f"{dataset_name} {description}".lower()
     for phrase in dangerous_phrases:
         if phrase in combined_input:
@@ -112,20 +75,44 @@ def describe():
             }), 400
 
     # ─────────────────────────────────────────
-    # STEP 4 — CALL AI SERVICE
+    # CHECK CACHE FIRST
     # ─────────────────────────────────────────
+    cache_key = generate_cache_key('describe', {
+        'dataset_name': dataset_name,
+        'description': description,
+        'fields': fields
+    })
+
+    cached = get_cached_response(cache_key)
+    if cached:
+        cached['from_cache'] = True
+        return jsonify(cached), 200
+
+    # ─────────────────────────────────────────
+    # CALL AI SERVICE
+    # ─────────────────────────────────────────
+    start_time = time.time()
+
     result = classify_data(
         dataset_name=dataset_name,
         description=description,
         fields=fields
     )
 
-    # ─────────────────────────────────────────
-    # STEP 5 — ADD GENERATED AT TIMESTAMP
-    # ─────────────────────────────────────────
+    # Record response time
+    response_time = time.time() - start_time
+    try:
+        from routes.health import record_response_time
+        record_response_time(response_time)
+    except Exception:
+        pass
+
     result['generated_at'] = datetime.utcnow().isoformat()
+    result['from_cache'] = False
 
     # ─────────────────────────────────────────
-    # STEP 6 — RETURN RESPONSE
+    # SAVE TO CACHE
     # ─────────────────────────────────────────
+    set_cached_response(cache_key, result, ttl=900)
+
     return jsonify(result), 200

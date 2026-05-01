@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from routes.describe import describe_bp
 from routes.recommend import recommend_bp
 from routes.report import report_bp
+from routes.health import health_bp
 
 load_dotenv()
 
@@ -13,16 +14,7 @@ app = Flask(__name__)
 app.register_blueprint(describe_bp)
 app.register_blueprint(recommend_bp)
 app.register_blueprint(report_bp)
-
-
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({
-        "status": "ok",
-        "service": "Tool-134 AI Service",
-        "version": "1.0.0",
-        "port": os.getenv("FLASK_PORT", "5000")
-    }), 200
+app.register_blueprint(health_bp)
 
 
 @app.errorhandler(404)
@@ -64,7 +56,7 @@ if __name__ == '__main__':
     print("")
     print("  Tool-134 AI Service starting...")
     print(f"  Running on http://localhost:{port}")
-    print(f"  Health check:     http://localhost:{port}/health")
+    print(f"  Health:           http://localhost:{port}/health")
     print(f"  Describe:         http://localhost:{port}/describe")
     print(f"  Recommend:        http://localhost:{port}/recommend")
     print(f"  Generate Report:  http://localhost:{port}/generate-report")
