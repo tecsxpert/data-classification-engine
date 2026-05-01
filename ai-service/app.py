@@ -5,10 +5,25 @@ from routes.describe import describe_bp
 from routes.recommend import recommend_bp
 from routes.report import report_bp
 from routes.health import health_bp
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# Fix proxy headers
+app.wsgi_app = ProxyFix(app.wsgi_app)
+
+# ─────────────────────────────────────────────
+# RATE LIMITING
+# ─────────────────────────────────────────────
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["30 per minute"]
+)
 
 # Register blueprints
 app.register_blueprint(describe_bp)
@@ -17,6 +32,24 @@ app.register_blueprint(report_bp)
 app.register_blueprint(health_bp)
 
 
+# ─────────────────────────────────────────────
+# SECURITY HEADERS
+# ─────────────────────────────────────────────
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    return response
+
+
+# ─────────────────────────────────────────────
+# ERROR HANDLERS
+# ─────────────────────────────────────────────
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({
@@ -50,6 +83,9 @@ def bad_request(e):
     }), 400
 
 
+# ─────────────────────────────────────────────
+# START SERVER
+# ─────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.getenv("FLASK_PORT", 5000))
     debug = os.getenv("FLASK_ENV", "development") == "development"
