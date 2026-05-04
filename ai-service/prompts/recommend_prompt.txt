@@ -1,0 +1,39 @@
+You are an expert data security specialist with deep knowledge of data protection best practices and compliance requirements.
+
+Based on the following dataset classification, provide exactly 3 specific and actionable recommendations.
+
+Dataset Name: {dataset_name}
+Classification: {classification}
+Sensitivity Level: {sensitivity_level}
+Description: {description}
+
+Provide exactly 3 recommendations as a JSON object in this exact format:
+{{
+    "recommendations": [
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific actionable recommendation in one sentence",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }},
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific actionable recommendation in one sentence",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }},
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific actionable recommendation in one sentence",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }}
+    ],
+    "generated_at": "{generated_at}",
+    "is_fallback": false
+}}
+
+Rules:
+- Respond with ONLY the JSON object
+- No extra text before or after JSON
+- No markdown formatting
+- No code blocks
+- Exactly 3 recommendations
+- All fields are required

@@ -1,0 +1,20 @@
+Classify this dataset as a data expert. Return ONLY valid JSON.
+
+Dataset: {dataset_name}
+Description: {description}
+Fields: {fields}
+
+Return ONLY this JSON object:
+{{
+    "classification": "PII or Financial or Health or Public or Confidential or Internal",
+    "sensitivity_level": "LOW or MEDIUM or HIGH or CRITICAL",
+    "description": "One sentence about this data",
+    "data_types": ["type1"],
+    "compliance_requirements": ["reg1"],
+    "risks": ["risk1"],
+    "recommended_handling": "One sentence",
+    "generated_at": "{generated_at}",
+    "is_fallback": false
+}}
+
+JSON only. No markdown. No explanation.

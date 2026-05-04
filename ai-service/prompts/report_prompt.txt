@@ -1,0 +1,62 @@
+You are an expert data governance specialist with deep knowledge of data classification, privacy regulations, and security best practices.
+
+Generate a comprehensive data classification report for the following dataset.
+
+Dataset Name: {dataset_name}
+Classification: {classification}
+Sensitivity Level: {sensitivity_level}
+Description: {description}
+Data Fields: {fields}
+
+Respond with ONLY a valid JSON object in exactly this format:
+{{
+    "title": "Data Classification Report — {dataset_name}",
+    "summary": "One paragraph executive summary of this dataset and its classification",
+    "overview": "Detailed 2-3 paragraph overview explaining the data, its purpose, and classification rationale",
+    "key_items": [
+        {{
+            "category": "Data Type",
+            "value": "description of data types found"
+        }},
+        {{
+            "category": "Compliance",
+            "value": "applicable regulations"
+        }},
+        {{
+            "category": "Risk Level",
+            "value": "description of risks"
+        }},
+        {{
+            "category": "Data Sensitivity",
+            "value": "sensitivity explanation"
+        }}
+    ],
+    "recommendations": [
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific recommendation",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }},
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific recommendation",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }},
+        {{
+            "action_type": "one of: ENCRYPT, ACCESS_CONTROL, AUDIT, BACKUP, ANONYMIZE, DELETE, MONITOR, TRAIN",
+            "description": "specific recommendation",
+            "priority": "one of: LOW, MEDIUM, HIGH, CRITICAL"
+        }}
+    ],
+    "generated_at": "{generated_at}",
+    "is_fallback": false
+}}
+
+Rules:
+- Respond with ONLY the JSON object
+- No extra text before or after JSON
+- No markdown formatting
+- No code blocks
+- All fields are required
+- Exactly 4 key_items
+- Exactly 3 recommendations
