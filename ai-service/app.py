@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 from routes.describe import describe_bp
@@ -11,9 +12,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
-app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Fix proxy headers
+app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
 # ─────────────────────────────────────────────
@@ -84,11 +86,32 @@ def bad_request(e):
 
 
 # ─────────────────────────────────────────────
+# STARTUP — PRE-LOAD SENTENCE TRANSFORMERS
+# ─────────────────────────────────────────────
+def initialize_services():
+    """
+    Pre-loads sentence-transformers at startup.
+    This means first request is faster.
+    """
+    try:
+        logger.info("Pre-loading sentence-transformers...")
+        from services.chroma_service import initialize_chromadb
+        success = initialize_chromadb()
+        if success:
+            logger.info("ChromaDB ready!")
+        else:
+            logger.warning("ChromaDB not available — continuing without it")
+    except Exception as e:
+        logger.warning(f"ChromaDB startup error: {str(e)}")
+
+
+# ─────────────────────────────────────────────
 # START SERVER
 # ─────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.getenv("FLASK_PORT", 5000))
     debug = os.getenv("FLASK_ENV", "development") == "development"
+
     print("")
     print("  Tool-134 AI Service starting...")
     print(f"  Running on http://localhost:{port}")
@@ -97,4 +120,8 @@ if __name__ == '__main__':
     print(f"  Recommend:        http://localhost:{port}/recommend")
     print(f"  Generate Report:  http://localhost:{port}/generate-report")
     print("")
+
+    # Pre-load sentence-transformers
+    initialize_services()
+
     app.run(host='0.0.0.0', port=port, debug=debug)
