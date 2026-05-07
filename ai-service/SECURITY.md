@@ -51,4 +51,8 @@ Security documentation for Tool-134 AI Service.
 - No HTTPS in development (will be added in production)
 
 ## Sign Off
-- AI Developer 1: Ayush — ✅
+
+- AI Developer 2: Somasekhar v — ✅
+- Security review completed
+- Endpoint security verified
+- Prompt injection protection verifiedgit status
